@@ -122,7 +122,7 @@ namespace Cache{
                 void evictLeastRecent() {
                     NodePtr leastRecent = dummyHead_->next_;
                     removeNode(leastRecent);
-                    nodeMap_.erase(leastRecent->getKey());
+                    NodeMap_.erase(leastRecent->getKey());
                 }
 
             private:
@@ -132,4 +132,62 @@ namespace Cache{
                 NodePtr dummyHead_;
                 NodePtr dummyTail_;
     };
+
+    // k-lru
+    template<typename Key, typename Value> class LruKCache : public LruCache<Key, Value> {
+        public:
+            LruKCache(int capacity, int historyCapacity, int k)
+            : LruCache<Key, Value>(capacity)
+            , historyList_(std::make_unique<LruCache<Key,size_t>>(historyCapacity))
+            , k_(k){}
+
+            Value get(Key key) {
+                Value value{};
+                bool inMainCache = LruCache<Key, Value>::get(key, value);
+
+                size_t historyCount = historyList_->get(key);
+                historyCount++;
+                historyList_->put(key, historyCount);
+
+                if(inMainCache) {return value;}
+                if(historyCount>=k_) {
+                    auto it = historyValueMap_.find(key);
+                    if(it !=historyValueMap_.end()) {
+                        Value storedValue = it->second;
+                        historyList_->remove(key);
+                        historyValueMap_.erase(it);
+                        LruCache<Key, Value>::put(key, storedValue);
+                        return storedValue;
+                    }
+                }
+                return value;
+            }
+
+            void put(Key key, Value value) {
+                Value existingValue{};
+                bool inMainCache = LruCache<Key, Value>::get(key, existingValue);
+                if(inMainCache) {
+                    LruCache<Key, Value>::put(key, value);
+                    return;
+                }
+                size_t historyCount = historyList_->get(key);
+                historyCount++;
+                historyList_->put(key, historyCount);
+
+                historyValueMap_[key] = value;
+                if(historyCount>=k_) {
+                    historyList_->remove(key);
+                    historyValueMap_.erase(key);
+                    LruCache<Key, Value>::put(key, value)
+                }
+            }
+
+        private:
+            int k_;
+            std::unique_ptr<LruCache<Key, size_t>> historyList_;
+            std::unordered_map<Key, Value> historyValueMap_;
+    };
+
+    
+
 }

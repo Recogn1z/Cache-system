@@ -1,6 +1,6 @@
 ### **Project OverView**
 
-#### A C++ 11 implementation of multiple caching algorithms(LRU, LFU, LRU-K, HashLRU, HashLFU) with a unified interface and workload benchmark tests
+A C++ 11 implementation of multiple caching algorithms(LRU, LFU, LRU-K, HashLRU, HashLFU) with a unified interface and workload benchmark tests
 
 ---
 

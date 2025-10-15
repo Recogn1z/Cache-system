@@ -1,5 +1,3 @@
-# Cache-system
-
 ### **Project OverView**
 
 #### A C++ 11 implementation of multiple caching algorithms(LRU, LFU, LRU-K, HashLRU, HashLFU) with a unified interface and workload benchmark tests
@@ -40,7 +38,7 @@ CachePolicy  <-- Base Interface
 
 #### Result:
 
-![alt text](src\image.png)
+![alt text](src/image.png)
 
 ---
 

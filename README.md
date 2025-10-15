@@ -40,7 +40,7 @@ CachePolicy  <-- Base Interface
 
 #### Result:
 
-![alt text](image.png)
+![alt text](src\image.png)
 
 ---
 

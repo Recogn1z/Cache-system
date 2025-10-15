@@ -55,7 +55,7 @@ void testHotDataAccess() {
     
     std::vector<Cache::CachePolicy<int, std::string>*> caches = {&lru, &lfu, &klru, &lfuAging};
     std::vector<int> hits(4, 0);
-    std::vector<int> get_operations(5, 0);
+    std::vector<int> get_operations(4, 0);
     std::vector<std::string> names = {"LRU", "LFU", "KLRU", "LFU Aging"};
 
     for(int i = 0; i < caches.size(); i++) {
@@ -93,9 +93,70 @@ void testHotDataAccess() {
 }
 
 
+void testLoopPattern() {
+    std::cout<< "\n--- test2: LoopPatternTest ---" << std::endl;
+
+    const int CAPACITY = 50;
+    const int LOOP_SIZE = 500;
+    const int OPERATIONS = 200000;
+
+    Cache::LruCache<int, std::string> lru(CAPACITY);
+    Cache::LfuCache<int, std::string> lfu(CAPACITY);
+    Cache::LruKCache<int, std::string> klru(CAPACITY, LOOP_SIZE * 2, 2);
+    Cache::LfuCache<int, std::string> lfuAging(CAPACITY, 3000);
+
+    std::vector<Cache::CachePolicy<int, std::string>*> caches = {&lru, &lfu, &klru, &lfuAging};
+    std::vector<int> hits(4, 0);
+    std::vector<int> get_operations(4, 0);
+    std::vector<std::string> names = {"LRU", "LFU", "KLRU", "LFU Aging"};
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    for(int i =0; i < caches.size(); i++) {
+        for(int key = 0; key < LOOP_SIZE / 5; key++) {
+            std::string value = "loop" + std::to_string(key);
+            caches[i]->put(key, value);
+        }
+        int current_pos = 0;
+        // alternate read and write to simulate real operations
+        for(int op = 0; op < OPERATIONS; op++) {
+            // set 20% to write, 80% to read, cuz read is usually more than read in real world
+            bool isPut = (gen() % 100 < 20);
+            int key;
+
+            if(op % 100 < 60) {
+                key = current_pos;
+                current_pos = (current_pos + 1) % LOOP_SIZE;
+            }
+            else if(op % 100 < 90) {
+                key = gen() % LOOP_SIZE;
+            }
+            else {
+                key = LOOP_SIZE + (gen() % LOOP_SIZE);
+            }
+
+            if(isPut) {
+                std::string value = "loop" + std::to_string(key) + "_v" +std::to_string(op % 100);
+                caches[i]->put(key, value);
+            }
+            else {
+                std::string result;
+                get_operations[i]++;
+                if(caches[i]->get(key, result)) {
+                    hits[i]++;
+                }
+            }
+
+        }
+    }
+    printResults("LoopPatternTest", CAPACITY, get_operations, hits);
+
+}
+
 int main() {
     testHotDataAccess();
-    //testLoopPattern();
+    testLoopPattern();
     //testWorkloadShift();
     return 0;
 }

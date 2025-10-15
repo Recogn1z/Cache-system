@@ -1,5 +1,5 @@
 # Cache-system
-use morden c++ to implement LRU LFU and ARC
+
+use morden c++ to implement LRU LFU
 
 Interface entrance: CachePolicy.h
-

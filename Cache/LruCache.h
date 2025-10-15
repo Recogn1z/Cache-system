@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include<thread>
 
 #include "CachePolicy.h"
 
@@ -178,7 +179,7 @@ namespace Cache{
                 if(historyCount>=k_) {
                     historyList_->remove(key);
                     historyValueMap_.erase(key);
-                    LruCache<Key, Value>::put(key, value)
+                    LruCache<Key, Value>::put(key, value);
                 }
             }
 

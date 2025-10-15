@@ -23,7 +23,7 @@ class Timer {
 };
 
 void printResults(const std::string& testName, int capacity, const std::vector<int>& get_operations, const std::vector<int>& hits) {
-    std::cout<< "--- " <<testName << "result ---" <<std::endl;
+    std::cout<< "--- " <<testName << " result ---" <<std::endl;
     std::cout<< "cache size: " << capacity <<std::endl;
 
     std::vector<std::string> names;
@@ -154,9 +154,94 @@ void testLoopPattern() {
 
 }
 
+void testWorkloadShift() {
+    std::cout<< "\n--- test3: WorkLoadShiftTest ---" << std::endl;
+    const int CAPACITY = 30;
+    const int OPERATIONS = 80000;
+    const int PHASE_LENGTH = OPERATIONS / 5;
+
+    Cache::LruCache<int, std::string> lru(CAPACITY);
+    Cache::LfuCache<int, std::string> lfu(CAPACITY);
+    Cache::LruKCache<int, std::string> klru(CAPACITY, 500, 2);
+    Cache::LfuCache<int, std::string> lfuAging(CAPACITY, 10000);
+
+    std::vector<Cache::CachePolicy<int, std::string>*> caches = {&lru, &lfu, &klru, &lfuAging};
+    std::vector<int> hits(4, 0);
+    std::vector<int> get_operations(4, 0);
+    std::vector<std::string> names = {"LRU", "LFU", "KLRU", "LFU Aging"};
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    for (int i = 0; i < caches.size(); ++i) { 
+        for (int key = 0; key < 30; ++key) {
+            std::string value = "init" + std::to_string(key);
+            caches[i]->put(key, value);
+        }
+        
+        for (int op = 0; op < OPERATIONS; ++op) {
+            int phase = op / PHASE_LENGTH;
+            
+            int putProbability;
+            switch (phase) {
+                case 0: putProbability = 15; break;  // phase 1: hotdate access, write occuiped 15%
+                case 1: putProbability = 30; break;  // phase 2: large range random，30% write
+                case 2: putProbability = 10; break;  // phase 3: sequential scan，10% write
+                case 3: putProbability = 25; break;  // phase 4: local random，tiny change to 25%
+                case 4: putProbability = 20; break;  // phase 5: mixed access，20%
+                default: putProbability = 20;
+            }
+            
+            // judge if is write or read 
+            bool isPut = (gen() % 100 < putProbability);
+            
+            int key;
+            if (op < PHASE_LENGTH) {  
+                key = gen() % 5;
+            } 
+            else if (op < PHASE_LENGTH * 2) { 
+                key = gen() % 400;
+            } 
+            else if (op < PHASE_LENGTH * 3) { 
+                key = (op - PHASE_LENGTH * 2) % 100;
+            } 
+            else if (op < PHASE_LENGTH * 4) { 
+                int locality = (op / 800) % 5;  
+                key = locality * 15 + (gen() % 15); 
+            } 
+            else { 
+                int r = gen() % 100;
+                if (r < 40) { 
+                    key = gen() % 5; 
+                } 
+                else if (r < 70) {  
+                    key = 5 + (gen() % 45);  
+                } 
+                else {  
+                    key = 50 + (gen() % 350);  
+                }
+            }
+            
+            if (isPut) {
+                std::string value = "value" + std::to_string(key) + "_p" + std::to_string(phase);
+                caches[i]->put(key, value);
+            } 
+            else {
+                std::string result;
+                get_operations[i]++;
+                if (caches[i]->get(key, result)) {
+                    hits[i]++;
+                }
+            }
+        }
+    }
+
+    printResults("WorkLoadShiftTest", CAPACITY, get_operations, hits);
+}
+
 int main() {
     testHotDataAccess();
     testLoopPattern();
-    //testWorkloadShift();
+    testWorkloadShift();
     return 0;
 }

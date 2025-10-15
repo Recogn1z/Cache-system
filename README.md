@@ -18,12 +18,15 @@
 ### **Architecture**
 
 ```
-CachePolicy  <-- Base Interface
- ├── LruCache
- │    └── LruKCache
- ├── LfuCache
- │    └── HashLfuCache
- └── HashLruCaches
+CachePolicy <-- Abstract Base Interface
+├── LruCache
+| |
+│ └── LruKCache (extends LRU with K-history)
+|
+├── LfuCache
+│
+├── HashLruCaches (composes multiple LRU shards)
+└── HashLfuCache (composes multiple LFU shards)
 ```
 
 ---
